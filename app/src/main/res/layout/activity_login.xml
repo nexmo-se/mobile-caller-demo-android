@@ -6,27 +6,12 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:padding="16dp"
-    tools:context=".HomeActivity">
-
-
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="You are logged in as:" />
-
-    <TextView
-        android:id="@+id/tv_mobile_number"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Mobile"
-        android:textSize="22sp"/>
-
+    tools:context=".LoginActivity">
 
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="32dp"
-        android:text="Dial Mobile Number" />
+        android:text="Mobile Number" />
 
     <EditText
         android:id="@+id/et_mobile_number"
@@ -37,11 +22,12 @@
         android:lines="1"/>
 
     <Button
-        android:id="@+id/btn_call_out"
+        android:id="@+id/btn_login"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:backgroundTint="@color/colorAccent"
         android:textColor="@android:color/white"
         android:layout_marginTop="32dp"
-        android:text="Call" />
+        android:text="Login" />
+
 </LinearLayout>

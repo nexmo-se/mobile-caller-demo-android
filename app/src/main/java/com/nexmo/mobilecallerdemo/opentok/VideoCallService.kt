@@ -6,7 +6,7 @@ import android.util.Log
 import android.widget.FrameLayout
 import com.opentok.android.*
 
-class VideoService(private val context: Context): Session.SessionListener, PublisherKit.PublisherListener {
+class VideoCallService(private val context: Context): Session.SessionListener, PublisherKit.PublisherListener {
     companion object {
         const val TAG = "SessionService"
     }
@@ -17,23 +17,42 @@ class VideoService(private val context: Context): Session.SessionListener, Publi
     private var mPublisher: Publisher? = null
     private var mSubscriber: Subscriber? = null
 
-    fun init(publisherViewContainer: FrameLayout?, subscriberViewContainer: FrameLayout?) {
+    private lateinit var videoListener: VideoListener
+
+    fun init(
+        publisherViewContainer: FrameLayout?, subscriberViewContainer: FrameLayout?,
+        apiKey: String, sessionId: String, token: String,
+        videoListener: VideoListener
+    ) {
         mPublisherViewContainer = publisherViewContainer
         mSubscriberViewContainer = subscriberViewContainer
+        this.videoListener = videoListener
 
         // initialize and connect to the session
-        mSession = Session.Builder(context, Config.API_KEY, Config.SESSION_ID).build()
+        Log.d(TAG, "Init Session")
+
+        mSession = Session.Builder(context, apiKey, sessionId).build()
         mSession?.setSessionListener(this)
-        mSession?.connect(Config.TOKEN)
+
+        mSession?.connect(token)
+        Log.d(TAG, "Session Initialized")
+    }
+
+    fun endSession() {
+        Log.d(TAG, "Ending Session")
+        mSession?.disconnect()
+        Log.d(TAG, "Session Ended")
     }
 
 
     override fun onStreamDropped(p0: Session?, p1: Stream?) {
         Log.d(TAG, "Stream Dropped")
         if (mSubscriber != null) {
-            mSubscriber = null;
+            mSubscriber = null
             mSubscriberViewContainer?.removeAllViews()
         }
+
+        endSession()
     }
 
     override fun onStreamReceived(p0: Session?, p1: Stream?) {
@@ -43,6 +62,8 @@ class VideoService(private val context: Context): Session.SessionListener, Publi
             mSession?.subscribe(mSubscriber)
             mSubscriberViewContainer?.addView(mSubscriber?.view)
         }
+
+        videoListener.onRemoteJoin()
     }
 
     override fun onConnected(p0: Session?) {
@@ -58,10 +79,13 @@ class VideoService(private val context: Context): Session.SessionListener, Publi
         }
 
         mSession?.publish(mPublisher)
+
+        videoListener.onCallStart()
     }
 
     override fun onDisconnected(p0: Session?) {
         Log.d(TAG, "Session Disconnected")
+        videoListener.onCallEnd()
     }
 
     override fun onError(p0: Session?, p1: OpentokError?) {
@@ -71,10 +95,12 @@ class VideoService(private val context: Context): Session.SessionListener, Publi
 
     override fun onStreamCreated(publisherKit: PublisherKit, stream: Stream) {
         Log.d(TAG, "Publisher onStreamCreated")
+        videoListener.onLocalJoin()
     }
 
     override fun onStreamDestroyed(publisherKit: PublisherKit, stream: Stream) {
         Log.d(TAG, "Publisher onStreamDestroyed")
+        endSession()
     }
 
     override fun onError(publisherKit: PublisherKit, opentokError: OpentokError) {

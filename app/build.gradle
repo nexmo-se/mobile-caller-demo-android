@@ -38,4 +38,7 @@ dependencies {
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.1.1'
     implementation 'pub.devrel:easypermissions:3.0.0'
     implementation 'com.opentok.android:opentok-android-sdk:2.16.3'
+    implementation 'me.pushy:sdk:1.0.56'
+    implementation 'com.squareup.okhttp3:okhttp:4.7.2'
+    implementation 'com.google.code.gson:gson:2.8.6'
 }

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@android:color/black"
+    android:padding="16dp"
+    tools:context=".RingActivity">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:layout_marginTop="64dp"
+        android:text="Calling from"
+        android:textColor="@android:color/white"
+        android:textSize="26sp"/>
+
+    <TextView
+        android:id="@+id/tv_from"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:layout_marginBottom="120dp"
+        android:text="6512341234"
+        android:textColor="@android:color/white"
+        android:textSize="32sp" />
+
+
+    <Button
+        android:id="@+id/btn_accept"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:backgroundTint="#009900"
+        android:text="Accept"
+        android:textColor="@android:color/white"/>
+
+    <Button
+        android:id="@+id/btn_reject"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:backgroundTint="#B90E0A"
+        android:text="Reject"
+        android:textColor="@android:color/white"/>
+</LinearLayout>

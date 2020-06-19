@@ -19,3 +19,6 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+-dontwarn me.pushy.**
+-keep class me.pushy.** { *; }
+-keep class android.support.v4.app.** { *; }
