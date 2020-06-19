@@ -1,14 +1,12 @@
 package com.nexmo.mobilecallerdemo
 
-import android.app.Notification
-import android.app.NotificationManager
-import android.app.PendingIntent
-import android.app.Service
+import android.app.*
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.graphics.Color
+import android.media.Ringtone
 import android.media.RingtoneManager
 import android.os.Build
 import android.os.IBinder
@@ -28,12 +26,15 @@ class RingService : Service() {
 
         const val ACTION_ANSWER_CALL = "ACTION_ANSWER_CALL"
         const val ACTION_REJECT_CALL = "ACTION_REJECT_CALL"
+        const val ACTION_SHOW_RINGER = "ACTION_SHOW_RINGER"
     }
 
     private lateinit var from: String
     private lateinit var apiKey: String
     private lateinit var sessionId: String
     private lateinit var token: String
+
+    private lateinit var ringtone: Ringtone
 
     private lateinit var apiService: ApiService
     private lateinit var callBroadcastReceiver: BroadcastReceiver
@@ -43,6 +44,10 @@ class RingService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (intent == null) {
+            return super.onStartCommand(intent, flags, startId)
+        }
+
         val notification = createNotification(this, intent!!)
         startForeground(10, notification)
 
@@ -55,24 +60,35 @@ class RingService : Service() {
         apiService = ApiService()
         callBroadcastReceiver = object: BroadcastReceiver() {
             override fun onReceive(cbrContext: Context?, cbrIntent: Intent?) {
-                if (!cbrIntent?.action.isNullOrEmpty() && cbrIntent?.action == ACTION_ANSWER_CALL) {
+                if (cbrIntent?.action == ACTION_ANSWER_CALL) {
                     Log.d(TAG, "Call answer signal received")
+                    ringtone.stop()
                     stopForeground(true)
-                } else if (!cbrIntent?.action.isNullOrEmpty() && cbrIntent?.action == ACTION_REJECT_CALL) {
+                } else if (cbrIntent?.action == ACTION_REJECT_CALL) {
                     Log.d(TAG, "Call reject signal received")
                     val runnable = Runnable {
                         apiService.rejectCall(from)
+                        ringtone.stop()
                         stopForeground(true)
                     }
                     val thread = Thread(runnable)
                     thread.start()
+                } else if (cbrIntent?.action == ACTION_SHOW_RINGER) {
+                    Log.d(TAG, "Show ringer signal received")
+                    ringtone.stop()
+                    stopForeground(true)
                 }
             }
         }
 
+        val uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
+        ringtone = RingtoneManager.getRingtone(this, uri)
+        ringtone.play()
+
         val intentFilter = IntentFilter()
         intentFilter.addAction(ACTION_ANSWER_CALL)
         intentFilter.addAction(ACTION_REJECT_CALL)
+        intentFilter.addAction(ACTION_SHOW_RINGER)
         registerReceiver(callBroadcastReceiver, intentFilter)
     }
 
@@ -130,7 +146,7 @@ class RingService : Service() {
             .setContentText(from)
             .setLights(Color.RED, 1000, 1000)
             .setVibrate(longArrayOf(0, 400, 250, 400))
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
             .setCategory(NotificationCompat.CATEGORY_CALL)
             .addAction(android.R.drawable.presence_audio_online, "Answer", answerPendingIntent)
             .addAction(android.R.drawable.presence_audio_busy, "Reject", rejectPendingIntent)

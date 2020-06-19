@@ -3,6 +3,8 @@ package com.nexmo.mobilecallerdemo
 import android.app.KeyguardManager
 import android.content.Context
 import android.content.Intent
+import android.media.Ringtone
+import android.media.RingtoneManager
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -20,12 +22,16 @@ class RingActivity : AppCompatActivity() {
         const val API_KEY = "apiKey"
         const val SESSION_ID = "sessionId"
         const val TOKEN = "token"
+
+        const val ACTION_SHOW_RINGER = "ACTION_SHOW_RINGER"
     }
 
     private lateinit var from: String
     private lateinit var apiKey: String
     private lateinit var sessionId: String
     private lateinit var token: String
+
+    private lateinit var ringtone: Ringtone
 
     private lateinit var apiService: ApiService
 
@@ -96,5 +102,22 @@ class RingActivity : AppCompatActivity() {
                         WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
             )
         }
+
+        val intent = Intent(ACTION_SHOW_RINGER)
+        sendBroadcast(intent)
+    }
+
+    override fun onResume() {
+        super.onResume()
+
+        val uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
+        ringtone = RingtoneManager.getRingtone(this, uri)
+        ringtone.play()
+    }
+
+    override fun onPause() {
+        super.onPause()
+
+        ringtone.stop()
     }
 }

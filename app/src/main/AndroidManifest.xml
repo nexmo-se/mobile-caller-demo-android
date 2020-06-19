@@ -28,7 +28,10 @@
             android:enabled="true"
             android:exported="true"></service>
 
-        <activity android:name=".RingActivity" />
+        <activity android:name=".RingActivity"
+            android:excludeFromRecents="true"
+            android:showWhenLocked="true"
+            android:showOnLockScreen="true" />
 
         <receiver
             android:name=".PushyReceiver"
@@ -46,6 +49,9 @@
             android:screenOrientation="portrait" />
         <activity
             android:name=".CallActivity"
+            android:excludeFromRecents="true"
+            android:showWhenLocked="true"
+            android:showOnLockScreen="true"
             android:screenOrientation="portrait" />
         <activity
             android:name=".HomeActivity"
