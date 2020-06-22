@@ -5,6 +5,9 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.media.AudioAttributes
+import android.media.AudioFocusRequest
+import android.media.AudioManager
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -13,7 +16,6 @@ import android.widget.FrameLayout
 import androidx.appcompat.app.AppCompatActivity
 import com.nexmo.mobilecallerdemo.connection.OTAction
 import com.nexmo.mobilecallerdemo.connection.OTPhone
-import com.nexmo.mobilecallerdemo.notification.IncomingCallRequest
 import com.nexmo.mobilecallerdemo.opentok.VideoCallService
 import com.nexmo.mobilecallerdemo.opentok.VideoListener
 import kotlinx.android.synthetic.main.activity_call.*
@@ -42,6 +44,8 @@ class CallActivity : AppCompatActivity() {
     private lateinit var apiKey: String
     private lateinit var sessionId: String
     private lateinit var token: String
+
+    private lateinit var audioFocusRequest: AudioFocusRequest
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -102,10 +106,30 @@ class CallActivity : AppCompatActivity() {
         val intentFilter = IntentFilter()
         intentFilter.addAction(OTAction.REMOTE_REJECT)
         registerReceiver(callBroadcastReceiver, intentFilter)
+
+        val audioAttributes = AudioAttributes.Builder()
+            .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
+            .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+            .build()
+
+        audioFocusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
+            .setAudioAttributes(audioAttributes)
+            .setOnAudioFocusChangeListener { status -> Log.d(TAG, "AudioFocusChange $status") }
+            .build()
+
+        val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        audioManager.requestAudioFocus(audioFocusRequest)
+
+        Log.d(TAG, "Audio Focus Requested")
     }
 
     override fun onPause() {
+        val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        audioManager.abandonAudioFocusRequest(audioFocusRequest)
+        Log.d(TAG, "Audio Focus Abandoned")
+
         unregisterReceiver(callBroadcastReceiver)
+
         super.onPause()
     }
 

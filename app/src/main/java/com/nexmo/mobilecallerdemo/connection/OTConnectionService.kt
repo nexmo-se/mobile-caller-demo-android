@@ -86,6 +86,7 @@ class OTConnectionService : ConnectionService() {
             token
         )
 
+        otConnection.setRinging()
         otConnection.setIncomingCallUiShowing(true)
         connections[from] = otConnection
 

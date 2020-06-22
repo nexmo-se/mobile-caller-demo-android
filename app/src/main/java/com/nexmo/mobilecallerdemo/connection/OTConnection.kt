@@ -32,7 +32,7 @@ class OTConnection(
     private var incomingCallUiShowing = false
 
     init {
-        this.connectionProperties = Connection.PROPERTY_SELF_MANAGED
+        this.connectionProperties = PROPERTY_SELF_MANAGED
         this.setCallerDisplayName(remoteMobileNumber, TelecomManager.PRESENTATION_ALLOWED)
     }
 
@@ -93,6 +93,8 @@ class OTConnection(
             STATE_DIALING, STATE_ACTIVE -> {
                 Log.d(TAG, "State: Active, Dialing")
                 val callIntent = Intent(connectionService, CallActivity::class.java)
+                callIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                callIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
 
                 callIntent.putExtra(EXTRA_FROM, remoteMobileNumber)
                 callIntent.putExtra(EXTRA_API_KEY, apiKey)
