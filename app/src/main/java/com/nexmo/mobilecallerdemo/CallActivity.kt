@@ -28,6 +28,7 @@ class CallActivity : AppCompatActivity() {
         const val API_KEY = "apiKey"
         const val SESSION_ID = "sessionId"
         const val TOKEN = "token"
+        const val DIRECTION = "direction"
 
     }
 
@@ -44,8 +45,9 @@ class CallActivity : AppCompatActivity() {
     private lateinit var apiKey: String
     private lateinit var sessionId: String
     private lateinit var token: String
+    private lateinit var direction: String
 
-    private lateinit var audioFocusRequest: AudioFocusRequest
+    private var hasEnded = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -55,6 +57,7 @@ class CallActivity : AppCompatActivity() {
         apiKey = intent.getStringExtra(API_KEY) ?: ""
         sessionId = intent.getStringExtra(SESSION_ID) ?: ""
         token = intent.getStringExtra(TOKEN) ?: ""
+        direction = intent.getStringExtra(DIRECTION) ?: ""
 
         // initialize view objects from your layout
         publisherViewContainer = findViewById(R.id.publisher_container)
@@ -69,7 +72,9 @@ class CallActivity : AppCompatActivity() {
             }
         }
 
-        sendActionBroadcast(OTAction.LOCAL_ANSWER)
+        if (direction == "incoming") {
+            sendActionBroadcast(OTAction.LOCAL_ANSWER)
+        }
 
         btn_end_call.setOnClickListener { endCall() }
 
@@ -101,33 +106,16 @@ class CallActivity : AppCompatActivity() {
     }
 
     override fun onResume() {
+        Log.d(TAG, "OnResume")
         super.onResume()
 
         val intentFilter = IntentFilter()
         intentFilter.addAction(OTAction.REMOTE_REJECT)
         registerReceiver(callBroadcastReceiver, intentFilter)
-
-        val audioAttributes = AudioAttributes.Builder()
-            .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
-            .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
-            .build()
-
-        audioFocusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
-            .setAudioAttributes(audioAttributes)
-            .setOnAudioFocusChangeListener { status -> Log.d(TAG, "AudioFocusChange $status") }
-            .build()
-
-        val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
-        audioManager.requestAudioFocus(audioFocusRequest)
-
-        Log.d(TAG, "Audio Focus Requested")
     }
 
     override fun onPause() {
-        val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
-        audioManager.abandonAudioFocusRequest(audioFocusRequest)
-        Log.d(TAG, "Audio Focus Abandoned")
-
+        Log.d(TAG, "OnPause")
         unregisterReceiver(callBroadcastReceiver)
 
         super.onPause()
@@ -155,14 +143,20 @@ class CallActivity : AppCompatActivity() {
 
             override fun onLocalHangup() {
                 Log.d(TAG, "OnLocalHangup")
-                sendActionBroadcast(OTAction.LOCAL_HANGUP)
-                videoCallService.endSession()
+                if (!hasEnded) {
+                    sendActionBroadcast(OTAction.LOCAL_HANGUP)
+                    videoCallService.endSession()
+                    hasEnded = true
+                }
             }
 
             override fun onRemoteHangup() {
                 Log.d(TAG, "OnRemoteHangup")
-                sendActionBroadcast(OTAction.REMOTE_HANGUP)
-                videoCallService.endSession()
+                if (!hasEnded) {
+                    sendActionBroadcast(OTAction.REMOTE_HANGUP)
+                    videoCallService.endSession()
+                    hasEnded = true
+                }
             }
         }
         videoCallService.init(

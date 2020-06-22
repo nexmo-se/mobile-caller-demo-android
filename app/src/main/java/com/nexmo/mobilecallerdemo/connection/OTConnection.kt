@@ -27,6 +27,7 @@ class OTConnection(
         const val EXTRA_API_KEY = "apiKey"
         const val EXTRA_SESSION_ID = "sessionId"
         const val EXTRA_TOKEN = "token"
+        const val EXTRA_DIRECTION = "direction"
     }
 
     private var incomingCallUiShowing = false
@@ -94,16 +95,19 @@ class OTConnection(
         when (state) {
             STATE_ACTIVE -> {
                 Log.d(TAG, "State: Active")
-                val callIntent = Intent(connectionService, CallActivity::class.java)
-                callIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                callIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                if (isIncomingCall()) {
+                    val callIntent = Intent(connectionService, CallActivity::class.java)
+                    callIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    callIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
 
-                callIntent.putExtra(EXTRA_FROM, remoteMobileNumber)
-                callIntent.putExtra(EXTRA_API_KEY, apiKey)
-                callIntent.putExtra(EXTRA_SESSION_ID, sessionId)
-                callIntent.putExtra(EXTRA_TOKEN, token)
+                    callIntent.putExtra(EXTRA_FROM, remoteMobileNumber)
+                    callIntent.putExtra(EXTRA_API_KEY, apiKey)
+                    callIntent.putExtra(EXTRA_SESSION_ID, sessionId)
+                    callIntent.putExtra(EXTRA_TOKEN, token)
+                    callIntent.putExtra(EXTRA_DIRECTION, "incoming")
 
-                connectionService.startActivity(callIntent)
+                    connectionService.startActivity(callIntent)
+                }
             }
             STATE_DIALING -> {
                 Log.d(TAG, "State: Dialing")
@@ -115,6 +119,7 @@ class OTConnection(
                 callIntent.putExtra(EXTRA_API_KEY, apiKey)
                 callIntent.putExtra(EXTRA_SESSION_ID, sessionId)
                 callIntent.putExtra(EXTRA_TOKEN, token)
+                callIntent.putExtra(EXTRA_DIRECTION, "outgoing")
 
                 connectionService.startActivity(callIntent)
             }

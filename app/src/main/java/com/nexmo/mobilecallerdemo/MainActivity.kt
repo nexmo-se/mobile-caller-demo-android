@@ -43,7 +43,10 @@ class MainActivity : AppCompatActivity() {
             Manifest.permission.RECORD_AUDIO,
             Manifest.permission.CALL_PHONE,
             Manifest.permission.WRITE_EXTERNAL_STORAGE,
-            Manifest.permission.WAKE_LOCK
+            Manifest.permission.WAKE_LOCK,
+            Manifest.permission.MODIFY_AUDIO_SETTINGS,
+            Manifest.permission.BLUETOOTH,
+            Manifest.permission.BROADCAST_STICKY
         )
 
         if (EasyPermissions.hasPermissions(this, *perms)) {

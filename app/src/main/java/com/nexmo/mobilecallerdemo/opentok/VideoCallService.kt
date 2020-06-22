@@ -29,7 +29,7 @@ class VideoCallService(private val context: Context): Session.SessionListener, P
         this.videoListener = videoListener
 
         // initialize and connect to the session
-        Log.d(TAG, "Init Session")
+        Log.d(TAG, "Init Session $sessionId")
 
         mSession = Session.Builder(context, apiKey, sessionId).build()
         mSession?.setSessionListener(this)
@@ -94,8 +94,8 @@ class VideoCallService(private val context: Context): Session.SessionListener, P
         videoListener.onCallEnd()
     }
 
-    override fun onError(p0: Session?, p1: OpentokError?) {
-        Log.d(TAG, "Session Error: ${p1?.message}")
+    override fun onError(session: Session?, error: OpentokError?) {
+        Log.d(TAG, "Session Error (${session?.sessionId}): ${error?.message}")
     }
 
 
