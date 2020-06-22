@@ -12,6 +12,9 @@ import android.view.WindowManager
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.nexmo.mobilecallerdemo.api.ApiService
+import com.nexmo.mobilecallerdemo.connection.OTAction
+import com.nexmo.mobilecallerdemo.connection.OTConnectionService
+import com.nexmo.mobilecallerdemo.notification.IncomingCallRequest
 import kotlinx.android.synthetic.main.activity_ring.*
 
 class RingActivity : AppCompatActivity() {
@@ -22,8 +25,6 @@ class RingActivity : AppCompatActivity() {
         const val API_KEY = "apiKey"
         const val SESSION_ID = "sessionId"
         const val TOKEN = "token"
-
-        const val ACTION_SHOW_RINGER = "ACTION_SHOW_RINGER"
     }
 
     private lateinit var from: String
@@ -42,12 +43,15 @@ class RingActivity : AppCompatActivity() {
 
         apiService = ApiService()
 
-        from = intent.getStringExtra(FROM) ?: "Unknown"
-        apiKey = intent.getStringExtra(API_KEY) ?: ""
-        sessionId = intent.getStringExtra(SESSION_ID) ?: ""
-        token = intent.getStringExtra(TOKEN) ?: ""
+        val incomingCallRequest = createIncomingCallRequest(intent)
+        sendActionBroadcast(OTAction.SHOW_RINGER, incomingCallRequest)
 
-        Log.d(TAG, intent.dataString ?: "null")
+        // Setup Views
+        from = incomingCallRequest.from
+        apiKey = incomingCallRequest.apiKey
+        sessionId = incomingCallRequest.sessionId
+        token = incomingCallRequest.token
+
         Log.d(TAG, "From: $from")
         Log.d(TAG, "OT API Key: $apiKey")
         Log.d(TAG, "OT Session ID: $sessionId")
@@ -57,32 +61,33 @@ class RingActivity : AppCompatActivity() {
 
         btn_accept.setOnClickListener {
             Toast.makeText(this, "Accepted", Toast.LENGTH_SHORT).show()
-
-            val newIntent = Intent()
-            newIntent.setClass(this, CallActivity::class.java)
-
-            newIntent.putExtra(FROM, from)
-            newIntent.putExtra(API_KEY, apiKey)
-            newIntent.putExtra(SESSION_ID, sessionId)
-            newIntent.putExtra(TOKEN, token)
-
-            startActivity(newIntent)
+            sendActionBroadcast(OTAction.LOCAL_ANSWER, incomingCallRequest)
             finish()
         }
 
         btn_reject.setOnClickListener {
             Toast.makeText(this, "Rejected", Toast.LENGTH_SHORT).show()
-            val runnable = Runnable {
-                apiService.rejectCall(from)
-                Log.d(TAG, "Reject Call Signal sent")
-
-                val uiRunnable = Runnable { finish() }
-                runOnUiThread(uiRunnable)
-            }
-            val thread = Thread(runnable)
-            thread.start()
+            sendActionBroadcast(OTAction.LOCAL_REJECT, incomingCallRequest)
+            finish()
         }
 
+        showOnLock()
+    }
+
+    override fun onResume() {
+        super.onResume()
+
+        val uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
+        ringtone = RingtoneManager.getRingtone(this, uri)
+        ringtone.play()
+    }
+
+    override fun onPause() {
+        ringtone.stop()
+        super.onPause()
+    }
+
+    private fun showOnLock() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
             Log.d(TAG, "After Android O_MR1")
             setShowWhenLocked(true)
@@ -102,22 +107,26 @@ class RingActivity : AppCompatActivity() {
                         WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
             )
         }
+    }
 
-        val intent = Intent(ACTION_SHOW_RINGER)
+    private fun createIncomingCallRequest(intent: Intent): IncomingCallRequest {
+        val from = intent.getStringExtra(FROM) ?: ""
+        val apiKey = intent.getStringExtra(API_KEY) ?: ""
+        val sessionId = intent.getStringExtra(SESSION_ID) ?: ""
+        val token = intent.getStringExtra(TOKEN) ?: ""
+
+        return IncomingCallRequest(from, apiKey, sessionId, token)
+    }
+
+    private fun sendActionBroadcast(action: String, incomingCallRequest: IncomingCallRequest) {
+        val intent = Intent()
+        intent.action = action
+
+        intent.putExtra(FROM, incomingCallRequest.from)
+        intent.putExtra(API_KEY, incomingCallRequest.apiKey)
+        intent.putExtra(SESSION_ID, incomingCallRequest.sessionId)
+        intent.putExtra(TOKEN, incomingCallRequest.token)
+
         sendBroadcast(intent)
-    }
-
-    override fun onResume() {
-        super.onResume()
-
-        val uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
-        ringtone = RingtoneManager.getRingtone(this, uri)
-        ringtone.play()
-    }
-
-    override fun onPause() {
-        super.onPause()
-
-        ringtone.stop()
     }
 }

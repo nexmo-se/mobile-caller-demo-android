@@ -7,9 +7,10 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.media.RingtoneManager
-import android.os.Bundle
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import com.nexmo.mobilecallerdemo.connection.OTAction
+import com.nexmo.mobilecallerdemo.connection.OTPhone
 import me.pushy.sdk.Pushy
 
 
@@ -26,39 +27,37 @@ class PushyReceiver : BroadcastReceiver() {
         const val NOTIFICATION_SESSION_ID = "sessionId"
         const val NOTIFICATION_TOKEN = "token"
 
-        const val ACTION_INCOMING_CALL = "ACTION_INCOMING_CALL"
-        const val ACTION_REJECT_CALL = "ACTION_REJECT_CALL"
+        const val PUSHY_ACTION_INCOMING_CALL = "ACTION_INCOMING_CALL"
+        const val PUSHY_ACTION_ANSWER_CALL = "ACTION_ANSWER_CALL"
+        const val PUSHY_ACTION_REJECT_CALL = "ACTION_REJECT_CALL"
     }
 
+    private lateinit var otPhone: OTPhone
+
     override fun onReceive(context: Context, intent: Intent) {
+        otPhone = OTPhone(context)
+
         when (intent.getStringExtra(NOTIFICATION_ACTION)) {
-            ACTION_INCOMING_CALL -> {
-                // Incoming Call
-                val from = intent.getStringExtra(NOTIFICATION_FROM)
-                val apiKey = intent.getStringExtra(NOTIFICATION_API_KEY)
-                val sessionId = intent.getStringExtra(NOTIFICATION_SESSION_ID)
-                val token = intent.getStringExtra(NOTIFICATION_TOKEN)
-
+            PUSHY_ACTION_INCOMING_CALL -> {
                 Log.d(TAG, "Incoming Call received")
-                Log.d(TAG, "From: $from")
-                Log.d(TAG, "OT API Key: $apiKey")
-                Log.d(TAG, "OT Session ID: $sessionId")
-                Log.d(TAG, "OT Token: $token")
 
-                val newIntent = Intent()
-                newIntent.setClass(context, RingService::class.java)
+                val from = intent.getStringExtra(NOTIFICATION_FROM) ?: "Unknown caller"
+                val apiKey = intent.getStringExtra(NOTIFICATION_API_KEY) ?: ""
+                val sessionId = intent.getStringExtra(NOTIFICATION_SESSION_ID) ?: ""
+                val token = intent.getStringExtra(NOTIFICATION_TOKEN) ?: ""
 
-                newIntent.putExtra(NOTIFICATION_FROM, from)
-                newIntent.putExtra(NOTIFICATION_API_KEY, apiKey)
-                newIntent.putExtra(NOTIFICATION_SESSION_ID, sessionId)
-                newIntent.putExtra(NOTIFICATION_TOKEN, token)
-
-                context.startForegroundService(newIntent)
+                otPhone.callIn(from, apiKey, sessionId, token)
             }
-            ACTION_REJECT_CALL -> {
+            PUSHY_ACTION_ANSWER_CALL -> {
+                Log.d(TAG, "Answer Call received")
+
+                val newIntent = createBroadcastIntent(OTAction.REMOTE_ANSWER, intent)
+                context.sendBroadcast(newIntent)
+            }
+            PUSHY_ACTION_REJECT_CALL -> {
                 Log.d(TAG, "Reject Call received")
 
-                val newIntent = Intent(ACTION_REJECT_CALL)
+                val newIntent = createBroadcastIntent(OTAction.REMOTE_REJECT, intent)
                 context.sendBroadcast(newIntent)
             }
             else -> {
@@ -73,6 +72,18 @@ class PushyReceiver : BroadcastReceiver() {
                 displayNotification(context, notificationText)
             }
         }
+    }
+
+    private fun createBroadcastIntent(action: String, intent: Intent): Intent {
+        val newIntent = Intent()
+        newIntent.action = action
+
+        newIntent.putExtra(NOTIFICATION_FROM, intent.getStringExtra(NOTIFICATION_FROM))
+        newIntent.putExtra(NOTIFICATION_API_KEY, intent.getStringExtra(NOTIFICATION_API_KEY))
+        newIntent.putExtra(NOTIFICATION_SESSION_ID, intent.getStringExtra(NOTIFICATION_SESSION_ID))
+        newIntent.putExtra(NOTIFICATION_TOKEN,intent.getStringExtra(NOTIFICATION_TOKEN))
+
+        return newIntent;
     }
 
     private fun displayNotification(context: Context, notificationText: String) {

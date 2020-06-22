@@ -6,4 +6,7 @@ interface VideoListener {
 
     fun onLocalJoin() {}
     fun onRemoteJoin() {}
+
+    fun onLocalHangup() {}
+    fun onRemoteHangup() {}
 }

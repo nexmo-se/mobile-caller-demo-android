@@ -38,6 +38,12 @@ class VideoCallService(private val context: Context): Session.SessionListener, P
         Log.d(TAG, "Session Initialized")
     }
 
+    fun unpublish() {
+        Log.d(TAG, "Unpublishing")
+        mSession?.unpublish(mPublisher)
+        Log.d(TAG, "Unpublished")
+    }
+
     fun endSession() {
         Log.d(TAG, "Ending Session")
         mSession?.disconnect()
@@ -52,7 +58,7 @@ class VideoCallService(private val context: Context): Session.SessionListener, P
             mSubscriberViewContainer?.removeAllViews()
         }
 
-        endSession()
+        videoListener.onRemoteHangup()
     }
 
     override fun onStreamReceived(p0: Session?, p1: Stream?) {
@@ -100,7 +106,7 @@ class VideoCallService(private val context: Context): Session.SessionListener, P
 
     override fun onStreamDestroyed(publisherKit: PublisherKit, stream: Stream) {
         Log.d(TAG, "Publisher onStreamDestroyed")
-        endSession()
+        videoListener.onLocalHangup()
     }
 
     override fun onError(publisherKit: PublisherKit, opentokError: OpentokError) {

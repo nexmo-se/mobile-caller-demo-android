@@ -11,7 +11,9 @@ import android.util.Log
 import android.view.WindowManager
 import android.widget.FrameLayout
 import androidx.appcompat.app.AppCompatActivity
+import com.nexmo.mobilecallerdemo.connection.OTAction
 import com.nexmo.mobilecallerdemo.connection.OTPhone
+import com.nexmo.mobilecallerdemo.notification.IncomingCallRequest
 import com.nexmo.mobilecallerdemo.opentok.VideoCallService
 import com.nexmo.mobilecallerdemo.opentok.VideoListener
 import kotlinx.android.synthetic.main.activity_call.*
@@ -25,8 +27,6 @@ class CallActivity : AppCompatActivity() {
         const val SESSION_ID = "sessionId"
         const val TOKEN = "token"
 
-        const val ACTION_ANSWER_CALL = "ACTION_ANSWER_CALL"
-        const val ACTION_REJECT_CALL = "ACTION_REJECT_CALL"
     }
 
     private lateinit var videoCallService: VideoCallService
@@ -58,19 +58,16 @@ class CallActivity : AppCompatActivity() {
 
         callBroadcastReceiver = object: BroadcastReceiver() {
             override fun onReceive(cbrContext: Context?, cbrIntent: Intent?) {
-                if (!cbrIntent?.action.isNullOrEmpty() && cbrIntent?.action == ACTION_REJECT_CALL) {
+                if (cbrIntent?.action == OTAction.REMOTE_REJECT) {
                     Log.d(RingActivity.TAG, "Call reject signal received")
                     endCall()
                 }
             }
         }
 
-        val callAnswerIntent = Intent(ACTION_ANSWER_CALL)
-        sendBroadcast(callAnswerIntent)
+        sendActionBroadcast(OTAction.LOCAL_ANSWER)
 
-        btn_end_call.setOnClickListener {
-            endCall()
-        }
+        btn_end_call.setOnClickListener { endCall() }
 
         otPhone = OTPhone(this)
         videoCallService = VideoCallService(this)
@@ -103,7 +100,7 @@ class CallActivity : AppCompatActivity() {
         super.onResume()
 
         val intentFilter = IntentFilter()
-        intentFilter.addAction(ACTION_REJECT_CALL)
+        intentFilter.addAction(OTAction.REMOTE_REJECT)
         registerReceiver(callBroadcastReceiver, intentFilter)
     }
 
@@ -120,8 +117,6 @@ class CallActivity : AppCompatActivity() {
 
             override fun onCallEnd() {
                 Log.d(TAG, "OnCallEnd")
-
-                // TODO: Notify ConnectionService Disconnect
                 finish()
             }
 
@@ -131,9 +126,19 @@ class CallActivity : AppCompatActivity() {
 
             override fun onRemoteJoin() {
                 Log.d(TAG, "OnRemoteJoin")
+                sendActionBroadcast(OTAction.REMOTE_ANSWER)
+            }
 
-                // TODO: Notify ConnectionService Active
-                Log.d(TAG, "Call is now active")
+            override fun onLocalHangup() {
+                Log.d(TAG, "OnLocalHangup")
+                sendActionBroadcast(OTAction.LOCAL_HANGUP)
+                videoCallService.endSession()
+            }
+
+            override fun onRemoteHangup() {
+                Log.d(TAG, "OnRemoteHangup")
+                sendActionBroadcast(OTAction.REMOTE_HANGUP)
+                videoCallService.endSession()
             }
         }
         videoCallService.init(
@@ -143,7 +148,18 @@ class CallActivity : AppCompatActivity() {
 
 
     private fun endCall() {
-        videoCallService.endSession()
-        finish()
+        videoCallService.unpublish()
+    }
+
+    private fun sendActionBroadcast(action: String) {
+        val intent = Intent()
+        intent.action = action
+
+        intent.putExtra(FROM, from)
+        intent.putExtra(API_KEY, apiKey)
+        intent.putExtra(SESSION_ID, sessionId)
+        intent.putExtra(TOKEN, token)
+
+        sendBroadcast(intent)
     }
 }
