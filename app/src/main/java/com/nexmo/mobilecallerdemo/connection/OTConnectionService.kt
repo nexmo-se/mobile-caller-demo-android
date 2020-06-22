@@ -123,6 +123,7 @@ class OTConnectionService : ConnectionService() {
 
         makeOpentokCall(to, sessionId)
 
+        otConnection.setDialing()
         connections[to] = otConnection
         return otConnection
     }
@@ -227,6 +228,7 @@ class OTConnectionService : ConnectionService() {
                 Log.d(TAG, "Notification Action: $action")
                 connection?.setDisconnected(DisconnectCause(DisconnectCause.REJECTED))
                 connection?.setIncomingCallUiShowing(false)
+                rejectOpentokCall(from)
             }
             OTAction.LOCAL_HANGUP -> {
                 Log.d(TAG, "Notification Action: $action")
@@ -252,6 +254,15 @@ class OTConnectionService : ConnectionService() {
             val from = persistenceService.getMobileNumber() ?: "Unknown"
             apiService.notifyCallee(from, to, sessionId)
             Log.d(TAG, "Callee notified")
+        }
+        val thread = Thread(runnable)
+        thread.start()
+    }
+
+    private fun rejectOpentokCall(from: String) {
+        val runnable = Runnable {
+            apiService.rejectCall(from)
+            Log.d(TAG, "Call rejected")
         }
         val thread = Thread(runnable)
         thread.start()

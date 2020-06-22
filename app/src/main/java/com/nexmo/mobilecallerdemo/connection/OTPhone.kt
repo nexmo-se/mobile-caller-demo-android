@@ -86,13 +86,6 @@ class OTPhone(private val context: Context) {
     fun callOut(mobileNumber: String, apiKey: String, sessionId: String, token: String) {
         val uri = getPhoneUri(mobileNumber)
         val phoneAccountHandle = getPhoneAccountHandle()
-//        val outgoingCallPermitted = telecomManager.isOutgoingCallPermitted(phoneAccountHandle)
-//
-//        if (!outgoingCallPermitted) {
-//            Log.w(TAG, "Outgoing call not permitted")
-//            Toast.makeText(context, "Outgoing call not permitted", Toast.LENGTH_SHORT).show()
-//            return
-//        }
 
         val extras = Bundle()
         extras.putString(EXTRA_TO, mobileNumber)
@@ -112,13 +105,6 @@ class OTPhone(private val context: Context) {
     fun callIn(mobileNumber: String, apiKey: String, sessionId: String, token: String) {
         val uri = getPhoneUri(mobileNumber)
         val phoneAccountHandle = getPhoneAccountHandle()
-//        val incomingCallPermitted = telecomManager.isIncomingCallPermitted(phoneAccountHandle)
-
-//        if (!incomingCallPermitted) {
-//            Log.w(TAG, "Incoming call not permitted")
-//            Toast.makeText(context, "Incoming call not permitted", Toast.LENGTH_SHORT).show()
-//            return
-//        }
 
         val bundle = Bundle()
         bundle.putParcelable(TelecomManager.EXTRA_INCOMING_CALL_ADDRESS, uri)
