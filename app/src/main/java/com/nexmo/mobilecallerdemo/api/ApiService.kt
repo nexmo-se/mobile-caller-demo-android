@@ -89,4 +89,23 @@ class ApiService {
         val response = client.newCall(request).execute()
         return response.body?.string() ?: ""
     }
+
+    fun answerCall(to: String): String {
+        val url = "$HOST/opentok/answer"
+
+        val bodyObject = JSONObject()
+        bodyObject.put("to", to)
+        val bodyJson = bodyObject.toString()
+
+        val jsonMediaType = "application/json; charset=utf-8".toMediaType()
+        val client = OkHttpClient()
+        val body = bodyJson.toRequestBody(jsonMediaType)
+        val request = Request.Builder()
+            .url(url)
+            .post(body)
+            .build()
+
+        val response = client.newCall(request).execute()
+        return response.body?.string() ?: ""
+    }
 }

@@ -86,6 +86,8 @@ class OTConnectionService : ConnectionService() {
             token
         )
 
+        otConnection.setVideoState(VideoProfile.STATE_BIDIRECTIONAL)
+
         otConnection.setRinging()
         otConnection.setIncomingCallUiShowing(true)
         connections[from] = otConnection
@@ -123,6 +125,8 @@ class OTConnectionService : ConnectionService() {
         )
 
         makeOpentokCall(to, sessionId)
+
+        otConnection.setVideoState(VideoProfile.STATE_BIDIRECTIONAL)
 
         otConnection.setDialing()
         connections[to] = otConnection
@@ -224,6 +228,7 @@ class OTConnectionService : ConnectionService() {
                 Log.d(TAG, "Notification Action: $action")
                 connection?.setActive()
                 connection?.setIncomingCallUiShowing(false)
+                answerOpentokCall(from)
             }
             OTAction.LOCAL_REJECT -> {
                 Log.d(TAG, "Notification Action: $action")
@@ -238,6 +243,7 @@ class OTConnectionService : ConnectionService() {
             OTAction.REMOTE_ANSWER -> {
                 Log.d(TAG, "Notification Action: $action")
                 connection?.setActive()
+                Log.d(TAG, "Set Active")
             }
             OTAction.REMOTE_REJECT -> {
                 Log.d(TAG, "Notification Action: $action")
@@ -255,6 +261,15 @@ class OTConnectionService : ConnectionService() {
             val from = persistenceService.getMobileNumber() ?: "Unknown"
             apiService.notifyCallee(from, to, sessionId)
             Log.d(TAG, "Callee notified")
+        }
+        val thread = Thread(runnable)
+        thread.start()
+    }
+
+    private fun answerOpentokCall(from: String) {
+        val runnable = Runnable {
+            apiService.answerCall(from)
+            Log.d(TAG, "Call answered")
         }
         val thread = Thread(runnable)
         thread.start()

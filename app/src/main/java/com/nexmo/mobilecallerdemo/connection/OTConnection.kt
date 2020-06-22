@@ -33,11 +33,13 @@ class OTConnection(
 
     init {
         this.connectionProperties = PROPERTY_SELF_MANAGED
+        this.connectionCapabilities = CAPABILITY_SUPPORTS_VT_LOCAL_BIDIRECTIONAL or
+                CAPABILITY_SUPPORTS_VT_REMOTE_BIDIRECTIONAL
         this.setCallerDisplayName(remoteMobileNumber, TelecomManager.PRESENTATION_ALLOWED)
     }
 
     override fun onCallAudioStateChanged(state: CallAudioState?) {
-        Log.d(TAG, "Call Audio State Changed - ${state?.isMuted}")
+        Log.d(TAG, "Call Audio State Changed - ${state?.isMuted} ${state?.route}")
         super.onCallAudioStateChanged(state)
     }
 
@@ -90,8 +92,21 @@ class OTConnection(
     override fun onStateChanged(state: Int) {
         Log.d(TAG, "OnStateChanged - $state")
         when (state) {
-            STATE_DIALING, STATE_ACTIVE -> {
-                Log.d(TAG, "State: Active, Dialing")
+            STATE_ACTIVE -> {
+                Log.d(TAG, "State: Active")
+                val callIntent = Intent(connectionService, CallActivity::class.java)
+                callIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                callIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
+
+                callIntent.putExtra(EXTRA_FROM, remoteMobileNumber)
+                callIntent.putExtra(EXTRA_API_KEY, apiKey)
+                callIntent.putExtra(EXTRA_SESSION_ID, sessionId)
+                callIntent.putExtra(EXTRA_TOKEN, token)
+
+                connectionService.startActivity(callIntent)
+            }
+            STATE_DIALING -> {
+                Log.d(TAG, "State: Dialing")
                 val callIntent = Intent(connectionService, CallActivity::class.java)
                 callIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 callIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)

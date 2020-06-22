@@ -10,6 +10,7 @@ import android.os.Bundle
 import android.telecom.PhoneAccount
 import android.telecom.PhoneAccountHandle
 import android.telecom.TelecomManager
+import android.telecom.VideoProfile
 import android.util.Log
 import android.widget.Toast
 import com.nexmo.mobilecallerdemo.R
@@ -51,7 +52,9 @@ class OTPhone(private val context: Context) {
 
     private fun getPhoneAccount(mobileNumber: String, handle: PhoneAccountHandle): PhoneAccount {
         val uri = getPhoneUri(mobileNumber)
-        val capabilities = PhoneAccount.CAPABILITY_SELF_MANAGED or PhoneAccount.CAPABILITY_VIDEO_CALLING
+        val capabilities = PhoneAccount.CAPABILITY_SELF_MANAGED or
+                PhoneAccount.CAPABILITY_VIDEO_CALLING or
+                PhoneAccount.CAPABILITY_SUPPORTS_VIDEO_CALLING
 
         return PhoneAccount.builder(handle, PHONE_ACCOUNT_LABEL)
             .setAddress(uri)
@@ -95,6 +98,7 @@ class OTPhone(private val context: Context) {
 
         val bundle = Bundle()
         bundle.putParcelable(TelecomManager.EXTRA_PHONE_ACCOUNT_HANDLE, phoneAccountHandle)
+        bundle.putInt(TelecomManager.EXTRA_START_CALL_WITH_VIDEO_STATE, VideoProfile.STATE_BIDIRECTIONAL)
 
         bundle.putBundle(TelecomManager.EXTRA_OUTGOING_CALL_EXTRAS, extras)
 
@@ -108,6 +112,7 @@ class OTPhone(private val context: Context) {
 
         val bundle = Bundle()
         bundle.putParcelable(TelecomManager.EXTRA_INCOMING_CALL_ADDRESS, uri)
+        bundle.putInt(TelecomManager.EXTRA_INCOMING_VIDEO_STATE, VideoProfile.STATE_BIDIRECTIONAL)
 
         bundle.putString(EXTRA_FROM, mobileNumber)
         bundle.putString(EXTRA_API_KEY, apiKey)
