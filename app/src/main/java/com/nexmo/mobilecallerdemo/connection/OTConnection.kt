@@ -138,10 +138,4 @@ class OTConnection(
     fun isIncomingCall(): Boolean {
         return incomingCall
     }
-
-    private fun sendActionBroadcast(action: String) {
-        val intent = Intent()
-        intent.action = action
-        connectionService.sendBroadcast(intent)
-    }
 }

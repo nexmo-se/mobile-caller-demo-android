@@ -7,6 +7,7 @@ import com.nexmo.mobilecallerdemo.connection.OTPhone
 import com.nexmo.mobilecallerdemo.persistence.PersistenceService
 import com.nexmo.mobilecallerdemo.push.PushService
 import kotlinx.android.synthetic.main.activity_home.*
+import org.json.JSONObject
 
 class HomeActivity : AppCompatActivity() {
     companion object {
@@ -48,6 +49,17 @@ class HomeActivity : AppCompatActivity() {
     }
 
     private fun callOut(to: String) {
-        otPhone.callOut(to)
+        val runnable = Runnable {
+            val responseBody = apiService.createSession()
+            val jsonBody = JSONObject(responseBody)
+
+            val apiKey = jsonBody.getString("apiKey")
+            val sessionId = jsonBody.getString("sessionId")
+            val token = jsonBody.getString("token")
+            
+            otPhone.callOut(to, apiKey, sessionId, token)
+        }
+        val thread = Thread(runnable)
+        thread.start()
     }
 }

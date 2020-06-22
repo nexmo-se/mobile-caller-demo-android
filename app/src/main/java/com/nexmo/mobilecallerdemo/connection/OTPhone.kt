@@ -23,6 +23,7 @@ class OTPhone(private val context: Context) {
         const val PHONE_ACCOUNT_DESCRIPTION = "Opentok Video Call"
         const val URI_SCHEME = "tel"
 
+        const val EXTRA_TO = "to"
         const val EXTRA_FROM = "from"
         const val EXTRA_API_KEY = "apiKey"
         const val EXTRA_SESSION_ID = "sessionId"
@@ -82,7 +83,7 @@ class OTPhone(private val context: Context) {
     }
 
     @SuppressLint("MissingPermission")
-    fun callOut(mobileNumber: String) {
+    fun callOut(mobileNumber: String, apiKey: String, sessionId: String, token: String) {
         val uri = getPhoneUri(mobileNumber)
         val phoneAccountHandle = getPhoneAccountHandle()
 //        val outgoingCallPermitted = telecomManager.isOutgoingCallPermitted(phoneAccountHandle)
@@ -93,8 +94,16 @@ class OTPhone(private val context: Context) {
 //            return
 //        }
 
+        val extras = Bundle()
+        extras.putString(EXTRA_TO, mobileNumber)
+        extras.putString(EXTRA_API_KEY, apiKey)
+        extras.putString(EXTRA_SESSION_ID, sessionId)
+        extras.putString(EXTRA_TOKEN, token)
+
         val bundle = Bundle()
         bundle.putParcelable(TelecomManager.EXTRA_PHONE_ACCOUNT_HANDLE, phoneAccountHandle)
+
+        bundle.putBundle(TelecomManager.EXTRA_OUTGOING_CALL_EXTRAS, extras)
 
         Log.d(TAG, "Outgoing Call to $uri")
         telecomManager.placeCall(uri, bundle)

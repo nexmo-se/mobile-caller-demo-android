@@ -8,11 +8,8 @@ import android.telecom.*
 import android.util.Log
 import android.widget.Toast
 import com.nexmo.mobilecallerdemo.api.ApiService
-import com.nexmo.mobilecallerdemo.api.OutgoingCallRequest
-import com.nexmo.mobilecallerdemo.notification.IncomingCallRequest
 import com.nexmo.mobilecallerdemo.notification.NotificationService
 import com.nexmo.mobilecallerdemo.persistence.PersistenceService
-import org.json.JSONObject
 
 class OTConnectionService : ConnectionService() {
     companion object {
@@ -107,9 +104,9 @@ class OTConnectionService : ConnectionService() {
         val to = address.replace("tel:+", "")
         Log.d(TAG, "Phone Number [To] $to")
 
-
-        // Start a call
-        val outgoingCallRequest = makeOpentokCall(to)
+        val apiKey = request?.extras?.getString(EXTRA_API_KEY) ?: ""
+        val sessionId = request?.extras?.getString(EXTRA_SESSION_ID) ?: ""
+        val token = request?.extras?.getString(EXTRA_TOKEN) ?: ""
 
         // Create Connection
         val mobileNumber = persistenceService.getMobileNumber() ?: "Unknown"
@@ -118,13 +115,15 @@ class OTConnectionService : ConnectionService() {
             notificationService,
             false,
             mobileNumber,
-            outgoingCallRequest.to,
-            outgoingCallRequest.apiKey,
-            outgoingCallRequest.sessionId,
-            outgoingCallRequest.token
+            to,
+            apiKey,
+            sessionId,
+            token
         )
 
-        connections[outgoingCallRequest.to] = otConnection
+        makeOpentokCall(to, sessionId)
+
+        connections[to] = otConnection
         return otConnection
     }
 
@@ -226,7 +225,7 @@ class OTConnectionService : ConnectionService() {
             }
             OTAction.LOCAL_REJECT -> {
                 Log.d(TAG, "Notification Action: $action")
-                connection?.setDisconnected(DisconnectCause(DisconnectCause.LOCAL))
+                connection?.setDisconnected(DisconnectCause(DisconnectCause.REJECTED))
                 connection?.setIncomingCallUiShowing(false)
             }
             OTAction.LOCAL_HANGUP -> {
@@ -248,16 +247,13 @@ class OTConnectionService : ConnectionService() {
         }
     }
 
-    private fun makeOpentokCall(to: String): OutgoingCallRequest {
-        val from = persistenceService.getMobileNumber() ?: "Unknown"
-        val response = apiService.call(from, to)
-        Log.d(TAG, "Call made to server")
-        val responseObject = JSONObject(response)
-
-        val apiKey = responseObject.getString("apiKey")
-        val sessionId = responseObject.getString("sessionId")
-        val token = responseObject.getString("token")
-
-        return OutgoingCallRequest(to, apiKey, sessionId, token)
+    private fun makeOpentokCall(to: String, sessionId: String) {
+        val runnable = Runnable {
+            val from = persistenceService.getMobileNumber() ?: "Unknown"
+            apiService.notifyCallee(from, to, sessionId)
+            Log.d(TAG, "Callee notified")
+        }
+        val thread = Thread(runnable)
+        thread.start()
     }
 }
