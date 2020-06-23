@@ -8,7 +8,7 @@ import com.opentok.android.*
 
 class VideoCallService(private val context: Context): Session.SessionListener, PublisherKit.PublisherListener {
     companion object {
-        const val TAG = "SessionService"
+        const val TAG = "VideoCallService"
     }
 
     private var mSession: Session? = null
@@ -106,6 +106,7 @@ class VideoCallService(private val context: Context): Session.SessionListener, P
 
     override fun onStreamDestroyed(publisherKit: PublisherKit, stream: Stream) {
         Log.d(TAG, "Publisher onStreamDestroyed")
+        mPublisher?.capturer?.stopCapture()
         videoListener.onLocalHangup()
     }
 

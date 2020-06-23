@@ -1,13 +1,8 @@
 package com.nexmo.mobilecallerdemo
 
 import android.app.KeyguardManager
-import android.content.BroadcastReceiver
-import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
-import android.media.AudioAttributes
-import android.media.AudioFocusRequest
-import android.media.AudioManager
+import android.content.*
+import android.media.*
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -15,9 +10,13 @@ import android.view.WindowManager
 import android.widget.FrameLayout
 import androidx.appcompat.app.AppCompatActivity
 import com.nexmo.mobilecallerdemo.connection.OTAction
+import com.nexmo.mobilecallerdemo.connection.OTConnectionService
 import com.nexmo.mobilecallerdemo.connection.OTPhone
+import com.nexmo.mobilecallerdemo.connection.OTServiceConnection
+import com.nexmo.mobilecallerdemo.opentok.CustomAudioDevice
 import com.nexmo.mobilecallerdemo.opentok.VideoCallService
 import com.nexmo.mobilecallerdemo.opentok.VideoListener
+import com.opentok.android.AudioDeviceManager
 import kotlinx.android.synthetic.main.activity_call.*
 
 class CallActivity : AppCompatActivity() {
@@ -40,12 +39,15 @@ class CallActivity : AppCompatActivity() {
 
     private lateinit var videoListener: VideoListener
     private lateinit var callBroadcastReceiver: BroadcastReceiver
+    private lateinit var audioDevice: CustomAudioDevice
 
     private lateinit var from: String
     private lateinit var apiKey: String
     private lateinit var sessionId: String
     private lateinit var token: String
     private lateinit var direction: String
+
+    private lateinit var serviceConnection: OTServiceConnection
 
     private var hasEnded = false
 
@@ -78,8 +80,13 @@ class CallActivity : AppCompatActivity() {
 
         btn_end_call.setOnClickListener { endCall() }
 
+        // Use Custom Audio Driver
+//        audioDevice = CustomAudioDevice(this)
+//        AudioDeviceManager.setAudioDevice(audioDevice)
+
         otPhone = OTPhone(this)
         videoCallService = VideoCallService(this)
+
 
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
@@ -112,11 +119,18 @@ class CallActivity : AppCompatActivity() {
         val intentFilter = IntentFilter()
         intentFilter.addAction(OTAction.REMOTE_REJECT)
         registerReceiver(callBroadcastReceiver, intentFilter)
+
+        val intent = Intent()
+        intent.setClass(this, OTConnectionService::class.java)
+        serviceConnection = OTServiceConnection()
+        bindService(intent, serviceConnection, 0)
     }
 
     override fun onPause() {
         Log.d(TAG, "OnPause")
         unregisterReceiver(callBroadcastReceiver)
+
+        unbindService(serviceConnection)
 
         super.onPause()
     }

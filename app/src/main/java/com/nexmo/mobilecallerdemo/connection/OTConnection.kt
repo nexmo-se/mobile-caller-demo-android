@@ -92,13 +92,13 @@ class OTConnection(
 
     override fun onStateChanged(state: Int) {
         Log.d(TAG, "OnStateChanged - $state")
+
         when (state) {
             STATE_ACTIVE -> {
                 Log.d(TAG, "State: Active")
                 if (isIncomingCall()) {
                     val callIntent = Intent(connectionService, CallActivity::class.java)
                     callIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    callIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
 
                     callIntent.putExtra(EXTRA_FROM, remoteMobileNumber)
                     callIntent.putExtra(EXTRA_API_KEY, apiKey)
@@ -113,7 +113,6 @@ class OTConnection(
                 Log.d(TAG, "State: Dialing")
                 val callIntent = Intent(connectionService, CallActivity::class.java)
                 callIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                callIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
 
                 callIntent.putExtra(EXTRA_FROM, remoteMobileNumber)
                 callIntent.putExtra(EXTRA_API_KEY, apiKey)

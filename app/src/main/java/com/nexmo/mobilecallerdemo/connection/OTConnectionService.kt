@@ -4,9 +4,12 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.media.AudioFocusRequest
+import android.media.AudioManager
 import android.telecom.*
 import android.util.Log
 import android.widget.Toast
+import com.nexmo.mobilecallerdemo.CallActivity
 import com.nexmo.mobilecallerdemo.api.ApiService
 import com.nexmo.mobilecallerdemo.notification.NotificationService
 import com.nexmo.mobilecallerdemo.persistence.PersistenceService
@@ -49,6 +52,7 @@ class OTConnectionService : ConnectionService() {
         notificationService = NotificationService(this)
         persistenceService = PersistenceService(this)
         otPhone = OTPhone(this)
+
         engageReceiver()
     }
 
@@ -176,6 +180,7 @@ class OTConnectionService : ConnectionService() {
 
     override fun onConnectionServiceFocusGained() {
         Log.d(TAG, "OnConnectionServiceFocusGained")
+        dropAudioFocus()
         super.onConnectionServiceFocusGained()
     }
 
@@ -234,11 +239,13 @@ class OTConnectionService : ConnectionService() {
                 Log.d(TAG, "Notification Action: $action")
                 connection?.setDisconnected(DisconnectCause(DisconnectCause.REJECTED))
                 connection?.setIncomingCallUiShowing(false)
+                connection?.destroy()
                 rejectOpentokCall(from)
             }
             OTAction.LOCAL_HANGUP -> {
                 Log.d(TAG, "Notification Action: $action")
                 connection?.setDisconnected(DisconnectCause(DisconnectCause.LOCAL))
+                connection?.destroy()
             }
             OTAction.REMOTE_ANSWER -> {
                 Log.d(TAG, "Notification Action: $action")
@@ -248,10 +255,12 @@ class OTConnectionService : ConnectionService() {
             OTAction.REMOTE_REJECT -> {
                 Log.d(TAG, "Notification Action: $action")
                 connection?.setDisconnected(DisconnectCause(DisconnectCause.REJECTED))
+                connection?.destroy()
             }
             OTAction.REMOTE_HANGUP -> {
                 Log.d(TAG, "Notification Action: $action")
                 connection?.setDisconnected(DisconnectCause(DisconnectCause.REMOTE))
+                connection?.destroy()
             }
         }
     }
@@ -282,5 +291,12 @@ class OTConnectionService : ConnectionService() {
         }
         val thread = Thread(runnable)
         thread.start()
+    }
+
+    private fun dropAudioFocus() {
+        Log.d(TAG, "Dropping AudioFocus")
+        val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        val result = audioManager.abandonAudioFocus { audioFocus -> Log.d(OTConnection.TAG, "AudioFocus Changed to $audioFocus") }
+        Log.d(TAG, "AudioFocus Dropped - $result")
     }
 }
