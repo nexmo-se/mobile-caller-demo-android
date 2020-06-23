@@ -14,9 +14,11 @@ import com.nexmo.mobilecallerdemo.connection.OTConnectionService
 import com.nexmo.mobilecallerdemo.connection.OTPhone
 import com.nexmo.mobilecallerdemo.connection.OTServiceConnection
 import com.nexmo.mobilecallerdemo.opentok.CustomAudioDevice
+import com.nexmo.mobilecallerdemo.opentok.FileAudioDevice
 import com.nexmo.mobilecallerdemo.opentok.VideoCallService
 import com.nexmo.mobilecallerdemo.opentok.VideoListener
 import com.opentok.android.AudioDeviceManager
+import com.opentok.android.BaseAudioDevice
 import kotlinx.android.synthetic.main.activity_call.*
 
 class CallActivity : AppCompatActivity() {
@@ -39,7 +41,7 @@ class CallActivity : AppCompatActivity() {
 
     private lateinit var videoListener: VideoListener
     private lateinit var callBroadcastReceiver: BroadcastReceiver
-    private lateinit var audioDevice: CustomAudioDevice
+    private lateinit var audioDevice: BaseAudioDevice
 
     private lateinit var from: String
     private lateinit var apiKey: String
@@ -81,8 +83,8 @@ class CallActivity : AppCompatActivity() {
         btn_end_call.setOnClickListener { endCall() }
 
         // Use Custom Audio Driver
-//        audioDevice = CustomAudioDevice(this)
-//        AudioDeviceManager.setAudioDevice(audioDevice)
+        audioDevice = CustomAudioDevice(this)
+        AudioDeviceManager.setAudioDevice(audioDevice)
 
         otPhone = OTPhone(this)
         videoCallService = VideoCallService(this)
