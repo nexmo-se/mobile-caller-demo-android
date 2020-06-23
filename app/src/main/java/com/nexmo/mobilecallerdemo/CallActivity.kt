@@ -2,7 +2,6 @@ package com.nexmo.mobilecallerdemo
 
 import android.app.KeyguardManager
 import android.content.*
-import android.media.*
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -14,7 +13,6 @@ import com.nexmo.mobilecallerdemo.connection.OTConnectionService
 import com.nexmo.mobilecallerdemo.connection.OTPhone
 import com.nexmo.mobilecallerdemo.connection.OTServiceConnection
 import com.nexmo.mobilecallerdemo.opentok.CustomAudioDevice
-import com.nexmo.mobilecallerdemo.opentok.FileAudioDevice
 import com.nexmo.mobilecallerdemo.opentok.VideoCallService
 import com.nexmo.mobilecallerdemo.opentok.VideoListener
 import com.opentok.android.AudioDeviceManager
