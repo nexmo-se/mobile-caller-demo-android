@@ -3,6 +3,7 @@ package com.nexmo.mobilecallerdemo.opentok
 import android.content.Context
 import android.media.AudioFormat
 import android.media.AudioManager
+import android.media.AudioRecord
 import android.media.AudioTrack
 import android.os.Build
 import android.os.Handler
@@ -21,12 +22,10 @@ class CustomAudioDevice(private val context: Context): BaseAudioDevice() {
 
         const val NUM_CHANNELS_CAPTURING = 1
         const val NUM_CHANNELS_RENDERING = 1
-
-        const val CAPTURER_INTERVAL_MS: Long = 1000
-        const val RENDERER_INTERVAL_MS: Long = 1000
-
-        const val RENDERER_BUFFER_FRAMES = 10
     }
+
+    private val captureLock = ReentrantLock(true)
+    private val captureEvent = captureLock.newCondition()
 
     private val renderLock = ReentrantLock(true)
     private val renderEvent = renderLock.newCondition()
@@ -36,30 +35,61 @@ class CustomAudioDevice(private val context: Context): BaseAudioDevice() {
 
     private var audioDriverPaused: Boolean = false
 
-    private lateinit var capturerBuffer: ByteBuffer
-    private lateinit var rendererBuffer: ByteBuffer
-
-    private var capturerHandler: Handler
-    private var rendererHandler: Handler
+    private var audioRecord: AudioRecord? = null
+    private var killCapturerThread: Boolean = false
 
     private var audioTrack: AudioTrack? = null
     private var killRendererThread: Boolean = false
 
-    private val capturer = Runnable {
-        capturerBuffer.rewind()
+    private val capturerRunnable = Runnable {
+        val samplesPerBuffer = 441
+        val bufferSize = 1760
 
-        // TODO: Record to capturerBuffer
+        val recBuffer = ByteBuffer.allocateDirect(bufferSize)
+        val tempBufRec = ByteArray(bufferSize)
 
-        audioBus.writeCaptureData(capturerBuffer, SAMPLING_RATE)
+        while (!killCapturerThread) {
+            captureLock.lock()
 
-        if (capturerStarted && !audioDriverPaused) {
-            scheduleNextCapture()
+            try {
+                if (!capturerStarted) {
+                    captureEvent.await()
+                    continue
+                }
+
+                if (audioRecord != null && capturerStarted) {
+                    var readSize = (samplesPerBuffer shl 1) * 1
+                    readSize = audioRecord!!.read(tempBufRec, 0, readSize)
+                    if (readSize < 0) {
+                        when (readSize) {
+                            -3 -> {
+                                throw RuntimeException("captureRunnable(): AudioRecord.ERROR_INVALID_OPERATION")
+                            }
+                            -2 -> {
+                                throw RuntimeException("captureRunnable(): AudioRecord.ERROR_BAD_VALUE")
+                            }
+                            else -> {
+                                throw RuntimeException("captureRunnable(): AudioRecord.ERROR or default")
+                            }
+                        }
+                    }
+
+                    recBuffer.rewind()
+                    recBuffer.put(tempBufRec)
+
+                    val writeSize = (readSize shr 1) / 1
+
+                    audioBus.writeCaptureData(recBuffer, writeSize)
+                }
+            } catch (e: java.lang.Exception) {
+                e.printStackTrace()
+            } finally {
+                captureLock.unlock()
+            }
         }
     }
 
-    private fun scheduleNextCapture() {
-        capturerHandler.postDelayed(capturer, CAPTURER_INTERVAL_MS)
-    }
+    private var capturerThread: Thread? = null
 
     private val rendererRunnable = Runnable {
         val samplesPerBuffer = 440
@@ -76,29 +106,30 @@ class CustomAudioDevice(private val context: Context): BaseAudioDevice() {
             try {
                 if (!rendererStarted) {
                     renderEvent.await()
-                } else {
-                    // Read from Audio Bus
-                    renderLock.unlock()
-                    playBuffer.clear()
-                    var readSize = audioBus.readRenderData(playBuffer, samplesPerBuffer)
-                    renderLock.lock()
+                    continue
+                }
 
-                    if (audioTrack != null && rendererStarted) {
-                        readSize = (readSize shl 1) * 1
-                        playBuffer.get(tempBufPlay, 0, readSize)
+                // Read from Audio Bus
+                renderLock.unlock()
+                playBuffer.clear()
+                var readSize = audioBus.readRenderData(playBuffer, samplesPerBuffer)
+                renderLock.lock()
 
-                        val writeSize = audioTrack!!.write(tempBufPlay, 0, readSize)
-                        if (writeSize <= 0) {
-                            when (writeSize) {
-                                -3 -> {
-                                    throw RuntimeException("rendererRunnable(): AudioTrack.ERROR_INVALID_OPERATION")
-                                }
-                                -2 -> {
-                                    throw RuntimeException("rendererRunnable(): AudioTrack.ERROR_BAD_VALUE")
-                                }
-                                else -> {
-                                    throw RuntimeException("rendererRunnable(): AudioTrack.ERROR or default")
-                                }
+                if (audioTrack != null && rendererStarted) {
+                    readSize = (readSize shl 1) * 1
+                    playBuffer.get(tempBufPlay, 0, readSize)
+
+                    val writeSize = audioTrack!!.write(tempBufPlay, 0, readSize)
+                    if (writeSize <= 0) {
+                        when (writeSize) {
+                            -3 -> {
+                                throw RuntimeException("rendererRunnable(): AudioTrack.ERROR_INVALID_OPERATION")
+                            }
+                            -2 -> {
+                                throw RuntimeException("rendererRunnable(): AudioTrack.ERROR_BAD_VALUE")
+                            }
+                            else -> {
+                                throw RuntimeException("rendererRunnable(): AudioTrack.ERROR or default")
                             }
                         }
                     }
@@ -118,29 +149,100 @@ class CustomAudioDevice(private val context: Context): BaseAudioDevice() {
         rendererStarted = false
 
         audioDriverPaused = false
-
-        capturerHandler = Handler()
-        rendererHandler = Handler()
     }
 
     override fun initCapturer(): Boolean {
-        capturerBuffer = ByteBuffer.allocateDirect(SAMPLING_RATE * 2)
+        Log.d(TAG, "Init Capturer Start")
+
+        val minimumBufferSize = AudioRecord.getMinBufferSize(
+            captureSettings.sampleRate,
+            16,
+            2
+        )
+        val bufferSize = minimumBufferSize * 2
+
+        if (audioRecord != null) {
+            audioRecord!!.release()
+            audioRecord = null
+        }
+
+        audioRecord = AudioRecord(
+            7,
+            captureSettings.sampleRate,
+            16,
+            2,
+            bufferSize
+        )
+
+        if (audioRecord!!.state != 1) {
+            throw RuntimeException("Audio capture is not initialized ${captureSettings.sampleRate}")
+        }
+
+        killCapturerThread = false
+        capturerThread = Thread(capturerRunnable)
+        capturerThread?.start()
+
+        Log.d(TAG, "Init Capturer End")
         return true
     }
 
     override fun startCapturer(): Boolean {
+        Log.d(TAG, "Start Capturer Start")
+
+        if (audioRecord == null) {
+            throw IllegalStateException("startCapturer(): startRecording() called on an uninitialized AudioRecord.")
+        }
+
+        try {
+            audioRecord!!.startRecording()
+        } catch (e: IllegalStateException) {
+            throw RuntimeException(e.message)
+        }
+
+        captureLock.lock()
         capturerStarted = true
-        scheduleNextCapture()
+        captureEvent.signal()
+        captureLock.unlock()
+
+        Log.d(TAG, "Start Capturer End")
         return true
     }
 
     override fun stopCapturer(): Boolean {
-        capturerStarted = false
-        capturerHandler.removeCallbacks(capturer)
+        Log.d(TAG, "Stop Capturer Start")
+
+        if (audioRecord == null) {
+            throw IllegalStateException("stopCapturer(): stop() called on an uninitialized AudioRecord.")
+        }
+
+        captureLock.lock()
+
+        try {
+            if (audioRecord!!.recordingState == 3) {
+                audioRecord!!.stop()
+            }
+        } catch (e: java.lang.Exception) {
+            throw RuntimeException(e.message)
+        } finally {
+            capturerStarted = false
+            captureLock.unlock()
+        }
+
+        Log.d(TAG, "Stop Capturer End")
         return true
     }
 
     override fun destroyCapturer(): Boolean {
+        Log.d(TAG, "Destroy Capturer Start")
+
+        captureLock.lock()
+        audioRecord?.release()
+        audioRecord = null
+        killCapturerThread = true
+        captureEvent.signal()
+        captureLock.unlock()
+
+        Log.d(TAG, "Destroy Capturer End")
         return true
     }
 
@@ -154,7 +256,6 @@ class CustomAudioDevice(private val context: Context): BaseAudioDevice() {
 
     override fun initRenderer(): Boolean {
         Log.d(TAG, "Init Renderer Start")
-        rendererBuffer = ByteBuffer.allocateDirect(SAMPLING_RATE * 2 * RENDERER_BUFFER_FRAMES)
         val minimumBufferSize = AudioTrack.getMinBufferSize(renderSettings.sampleRate, 4, 2)
         audioTrack = AudioTrack(
             0,
@@ -165,20 +266,16 @@ class CustomAudioDevice(private val context: Context): BaseAudioDevice() {
             1
         )
 
+        if (audioTrack!!.state != 1) {
+            throw RuntimeException("Audio renderer not initialized ${renderSettings.sampleRate}")
+        }
+
+        killRendererThread = false
         rendererThread = Thread(rendererRunnable)
         rendererThread?.start()
 
         Log.d(TAG, "Init Renderer End")
         return true
-    }
-
-    private fun destroyAudioTrack() {
-        renderLock.lock()
-        audioTrack?.release()
-        audioTrack = null
-        killRendererThread = true
-        renderEvent.signal()
-        renderLock.unlock()
     }
 
     override fun startRenderer(): Boolean {
@@ -232,7 +329,14 @@ class CustomAudioDevice(private val context: Context): BaseAudioDevice() {
 
     override fun destroyRenderer(): Boolean {
         Log.d(TAG, "Destroy Renderer Start")
-        destroyAudioTrack()
+
+        renderLock.lock()
+        audioTrack?.release()
+        audioTrack = null
+        killRendererThread = true
+        renderEvent.signal()
+        renderLock.unlock()
+
         Log.d(TAG, "Destroy Renderer End")
         return true
     }
@@ -248,15 +352,10 @@ class CustomAudioDevice(private val context: Context): BaseAudioDevice() {
 
     override fun onResume() {
         audioDriverPaused = false
-
-        if (capturerStarted) {
-            scheduleNextCapture()
-        }
     }
 
     override fun onPause() {
         audioDriverPaused = true
-        capturerHandler.removeCallbacks(capturer)
     }
 
 }
