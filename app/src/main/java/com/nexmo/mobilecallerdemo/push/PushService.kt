@@ -25,7 +25,9 @@ class PushService(private val context: Context, private val apiService: ApiServi
                 Log.d(TAG, "Pushy Registering")
                 val token = Pushy.register(context)
                 Log.d(TAG, "Pushy Registered")
+
                 Log.d(TAG, "Token1 $token")
+
                 Log.d(TAG, "Saving to Server")
                 apiService.registerToken(mobileNumber, token)
                 Log.d(TAG, "Saved to Server")
@@ -37,6 +39,21 @@ class PushService(private val context: Context, private val apiService: ApiServi
             Pushy.listen(context)
             Log.d(TAG, "Pushy Listening")
         }
+        val thread = Thread(runnable)
+        thread.start()
+    }
+
+    fun destroy(mobileNumber: String) {
+        val runnable = Runnable {
+            Log.d(TAG, "Pushy Unregistering")
+            Pushy.unregister(context)
+            Log.d(TAG, "Pushy Unregistered")
+
+            Log.d(TAG, "Clearing from Server")
+            apiService.unregisterToken(mobileNumber)
+            Log.d(TAG, "Cleared from Server")
+        }
+
         val thread = Thread(runnable)
         thread.start()
     }

@@ -70,22 +70,18 @@ class HomeActivity : AppCompatActivity() {
         pushService.init(mobileNumber)
     }
 
+    private fun destroyPush() {
+        pushService.destroy(mobileNumber)
+    }
+
     private fun logout() {
-        val runnable = Runnable {
-            persistenceService.setMobileNumber(null)
-            apiService.unregisterToken(mobileNumber)
+        destroyPush()
+        Toast.makeText(this, "Logged out", Toast.LENGTH_SHORT).show()
 
-            runOnUiThread {
-                Toast.makeText(this, "Logged out", Toast.LENGTH_SHORT).show()
-            }
-
-            val intent = Intent()
-            intent.setClass(this, LoginActivity::class.java)
-            startActivity(intent)
-            finish()
-        }
-        val thread = Thread(runnable)
-        thread.start()
+        val intent = Intent()
+        intent.setClass(this, LoginActivity::class.java)
+        startActivity(intent)
+        finish()
     }
 
     private fun callOut(to: String) {
