@@ -5,6 +5,7 @@ import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
+import com.nexmo.mobilecallerdemo.api.ApiService
 import com.nexmo.mobilecallerdemo.persistence.PersistenceService
 import pub.devrel.easypermissions.AfterPermissionGranted
 import pub.devrel.easypermissions.EasyPermissions
@@ -15,15 +16,19 @@ class MainActivity : AppCompatActivity() {
         const val RC_PERMISSIONS = 1234
     }
 
+    private lateinit var apiService: ApiService
     private lateinit var persistenceService: PersistenceService
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        apiService = ApiService()
         persistenceService = PersistenceService(this)
 
         requestPermissions()
+
+        pingServer()
     }
 
     override fun onRequestPermissionsResult(
@@ -75,6 +80,14 @@ class MainActivity : AppCompatActivity() {
                 *perms
             )
         }
+    }
+
+    private fun pingServer() {
+        val runnable = Runnable {
+            apiService.ping()
+        }
+        val thread = Thread(runnable)
+        thread.start()
     }
 
 }

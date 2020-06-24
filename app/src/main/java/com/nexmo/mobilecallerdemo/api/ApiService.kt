@@ -13,6 +13,19 @@ class ApiService {
         const val HOST = "https://mobile-caller-demo.herokuapp.com"
     }
 
+    fun ping(): String {
+        val url = HOST
+
+        val client = OkHttpClient()
+        val request = Request.Builder()
+            .url(url)
+            .get()
+            .build()
+
+        val response = client.newCall(request).execute()
+        return response.body?.string() ?: ""
+    }
+
     fun registerToken(mobileNumber: String, token: String): String {
         val url = "$HOST/push/$mobileNumber/register"
 
