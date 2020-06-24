@@ -53,14 +53,7 @@ class HomeActivity : AppCompatActivity() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.menu_logout -> {
-                persistenceService.setMobileNumber(null)
-                Toast.makeText(this, "Logged out", Toast.LENGTH_SHORT).show()
-
-                val intent = Intent()
-                intent.setClass(this, LoginActivity::class.java)
-                startActivity(intent)
-                finish()
-
+                logout()
                 true
             }
             else -> {
@@ -75,6 +68,24 @@ class HomeActivity : AppCompatActivity() {
 
     private fun initPush() {
         pushService.init(mobileNumber)
+    }
+
+    private fun logout() {
+        val runnable = Runnable {
+            persistenceService.setMobileNumber(null)
+            apiService.unregisterToken(mobileNumber)
+
+            runOnUiThread {
+                Toast.makeText(this, "Logged out", Toast.LENGTH_SHORT).show()
+            }
+
+            val intent = Intent()
+            intent.setClass(this, LoginActivity::class.java)
+            startActivity(intent)
+            finish()
+        }
+        val thread = Thread(runnable)
+        thread.start()
     }
 
     private fun callOut(to: String) {

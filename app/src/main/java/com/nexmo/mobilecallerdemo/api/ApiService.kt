@@ -32,6 +32,24 @@ class ApiService {
         return response.body?.string() ?: ""
     }
 
+    fun unregisterToken(mobileNumber: String): String {
+        val url = "$HOST/push/$mobileNumber/unregister"
+
+        val bodyObject = JSONObject()
+        val bodyJson = bodyObject.toString()
+
+        val jsonMediaType = "application/json; charset=utf-8".toMediaType()
+        val client = OkHttpClient()
+        val body = bodyJson.toRequestBody(jsonMediaType)
+        val request = Request.Builder()
+            .url(url)
+            .post(body)
+            .build()
+
+        val response = client.newCall(request).execute()
+        return response.body?.string() ?: ""
+    }
+
     fun createSession(): String {
         val url = "$HOST/opentok/createSession"
 
