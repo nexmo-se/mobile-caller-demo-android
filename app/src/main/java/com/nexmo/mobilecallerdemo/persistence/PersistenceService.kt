@@ -9,7 +9,7 @@ class PersistenceService(private val context: Context) {
         const val SHARED_PREFERENCES_NAME = "mobilecallerdemo"
         const val MOBILE_NUMBER_KEY = "mobileNumber"
     }
-    fun setMobileNumber(mobileNumber: String) {
+    fun setMobileNumber(mobileNumber: String?) {
         val sharedPreferences = context.getSharedPreferences(
             SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE
         )

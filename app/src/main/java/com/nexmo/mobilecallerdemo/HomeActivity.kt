@@ -1,6 +1,10 @@
 package com.nexmo.mobilecallerdemo
 
+import android.content.Intent
 import android.os.Bundle
+import android.view.Menu
+import android.view.MenuItem
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.nexmo.mobilecallerdemo.api.ApiService
 import com.nexmo.mobilecallerdemo.connection.OTPhone
@@ -38,6 +42,31 @@ class HomeActivity : AppCompatActivity() {
 
         initPush()
         initPhone()
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        super.onCreateOptionsMenu(menu)
+        menuInflater.inflate(R.menu.menu, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.menu_logout -> {
+                persistenceService.setMobileNumber(null)
+                Toast.makeText(this, "Logged out", Toast.LENGTH_SHORT).show()
+
+                val intent = Intent()
+                intent.setClass(this, LoginActivity::class.java)
+                startActivity(intent)
+                finish()
+
+                true
+            }
+            else -> {
+                super.onOptionsItemSelected(item)
+            }
+        }
     }
 
     private fun initPhone() {
