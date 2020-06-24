@@ -3,8 +3,6 @@ package com.nexmo.mobilecallerdemo
 import android.app.KeyguardManager
 import android.content.Context
 import android.content.Intent
-import android.media.Ringtone
-import android.media.RingtoneManager
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -13,7 +11,6 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.nexmo.mobilecallerdemo.api.ApiService
 import com.nexmo.mobilecallerdemo.connection.OTAction
-import com.nexmo.mobilecallerdemo.connection.OTConnectionService
 import com.nexmo.mobilecallerdemo.notification.IncomingCallRequest
 import kotlinx.android.synthetic.main.activity_ring.*
 
@@ -31,8 +28,6 @@ class RingActivity : AppCompatActivity() {
     private lateinit var apiKey: String
     private lateinit var sessionId: String
     private lateinit var token: String
-
-    private lateinit var ringtone: Ringtone
 
     private lateinit var apiService: ApiService
 
@@ -72,19 +67,6 @@ class RingActivity : AppCompatActivity() {
         }
 
         showOnLock()
-    }
-
-    override fun onResume() {
-        super.onResume()
-
-        val uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
-        ringtone = RingtoneManager.getRingtone(this, uri)
-        ringtone.play()
-    }
-
-    override fun onPause() {
-        ringtone.stop()
-        super.onPause()
     }
 
     private fun showOnLock() {
