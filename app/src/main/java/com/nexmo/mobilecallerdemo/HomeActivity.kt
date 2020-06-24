@@ -89,6 +89,16 @@ class HomeActivity : AppCompatActivity() {
     }
 
     private fun callOut(to: String) {
+        if (to.isEmpty()) {
+            Toast.makeText(this, "Invalid Mobile Number", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        if (to == mobileNumber) {
+            Toast.makeText(this, "Calling self is not supported", Toast.LENGTH_SHORT).show()
+            return
+        }
+
         val runnable = Runnable {
             val responseBody = apiService.createSession()
             val jsonBody = JSONObject(responseBody)
@@ -96,7 +106,15 @@ class HomeActivity : AppCompatActivity() {
             val apiKey = jsonBody.getString("apiKey")
             val sessionId = jsonBody.getString("sessionId")
             val token = jsonBody.getString("token")
-            
+
+            if (apiKey.isNullOrEmpty() || sessionId.isNullOrEmpty() || token.isNullOrEmpty()){
+                runOnUiThread {
+                    Toast.makeText(this, "Failed to make call on server", Toast.LENGTH_SHORT)
+                        .show()
+                }
+                return@Runnable
+            }
+
             otPhone.callOut(to, apiKey, sessionId, token)
         }
         val thread = Thread(runnable)

@@ -34,7 +34,6 @@
         android:layout_height="wrap_content"
         android:inputType="phone"
         android:hint="e.g. 6512341234"
-        android:text="6512341234"
         android:lines="1"/>
 
     <Button
