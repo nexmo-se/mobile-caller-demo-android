@@ -13,9 +13,9 @@ import android.widget.FrameLayout
 import androidx.appcompat.app.AppCompatActivity
 import com.nexmo.mobilecallerdemo.connection.OTAction
 import com.nexmo.mobilecallerdemo.connection.OTPhone
-import com.nexmo.mobilecallerdemo.opentok.CustomAudioDevice
 import com.nexmo.mobilecallerdemo.opentok.VideoCallService
 import com.nexmo.mobilecallerdemo.opentok.VideoListener
+import com.nexmo.mobilecallerdemo.opentok.BypassAudioDevice
 import com.opentok.android.AudioDeviceManager
 import com.opentok.android.BaseAudioDevice
 import kotlinx.android.synthetic.main.activity_call.*
@@ -80,13 +80,13 @@ class CallActivity : AppCompatActivity() {
         btn_end_call.setOnClickListener { endCall() }
 
         // Use Custom Audio Driver
-        audioDevice = CustomAudioDevice(this)
+        audioDevice = BypassAudioDevice(this, false)
         if (AudioDeviceManager.getAudioDevice() == null) {
             Log.d(TAG, "Setting Audio Device")
             AudioDeviceManager.setAudioDevice(audioDevice)
         } else {
             val name = AudioDeviceManager.getAudioDevice()::class.java.simpleName
-            if (name == CustomAudioDevice::class.java.simpleName) {
+            if (name == BypassAudioDevice::class.java.simpleName) {
                 Log.d(TAG, "Audio Device already available $name")
             } else {
                 Log.w(TAG, "Audio Device already available $name")
