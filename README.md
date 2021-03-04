@@ -2,7 +2,7 @@
 Simple Video Caller Demo client
 
 ### Setup
-1. Change the server host in `ApiService.kt` line 13 to your hosted server.
+1. Change the server host in `ApiService.kt` line 13 to your hosted server (Github Repo: https://github.com/nexmo-se/mobile-caller-demo-server).
 2. Change the application ID in `app/build.gradle` to the one specified when creating the Pushy Application.
 2. Sync, Build and Run the application.
 
