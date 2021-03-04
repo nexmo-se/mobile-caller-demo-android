@@ -3,7 +3,8 @@ Simple Video Caller Demo client
 
 ### Setup
 1. Change the server host in `ApiService.kt` line 13 to your hosted server.
-2. Build and Run the application.
+2. Change the application ID in `app/build.gradle` to the one specified when creating the Pushy Application.
+2. Sync, Build and Run the application.
 
 ### Using The Application
 1. Login by entering your mobile number. This will be used as a user identifier which the other party will use to call you.
